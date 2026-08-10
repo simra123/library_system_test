@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const setUser = useAuthStore((s) => s.setUser);
+  const setSession = useAuthStore((s) => s.setSession);
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -20,13 +20,13 @@ export default function AdminLogin() {
     setLoading(true);
     const form = new FormData(e.currentTarget);
     try {
-      const { user } = await loginAdmin({
+      const { user, token } = await loginAdmin({
         email: String(form.get("email")),
         password: String(form.get("password")),
       });
-      setUser({ ...user, role: "admin" });
+      setSession(user, token);
       toast.success("Welcome back, Admin");
-      navigate("/admin");
+      navigate("/admin", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {

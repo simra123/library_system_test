@@ -9,9 +9,12 @@ export type AuthUser = {
   department?: string;
 };
 
-type State = { currentUser: AuthUser | null };
+type State = {
+  currentUser: AuthUser | null;
+  token: string | null;
+};
 type Actions = {
-  setUser: (u: AuthUser) => void;
+  setSession: (user: AuthUser, token: string) => void;
   logout: () => void;
 };
 
@@ -19,8 +22,9 @@ export const useAuthStore = create<State & Actions>()(
   persist(
     (set) => ({
       currentUser: null,
-      setUser: (u) => set({ currentUser: u }),
-      logout: () => set({ currentUser: null }),
+      token: null,
+      setSession: (currentUser, token) => set({ currentUser, token }),
+      logout: () => set({ currentUser: null, token: null }),
     }),
     { name: "libraryhub-auth" },
   ),

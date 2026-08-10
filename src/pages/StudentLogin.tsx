@@ -11,7 +11,7 @@ import { useAuthStore } from "@/store/authStore";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const setUser = useAuthStore((s) => s.setUser);
+  const setSession = useAuthStore((s) => s.setSession);
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -19,13 +19,13 @@ export default function StudentLogin() {
     setLoading(true);
     const f = new FormData(e.currentTarget);
     try {
-      const { user } = await loginStudent({
+      const { user, token } = await loginStudent({
         email: String(f.get("email")),
         password: String(f.get("password")),
       });
-      setUser({ ...user, role: "student" });
+      setSession(user, token);
       toast.success(`Welcome, ${user.name}`);
-      navigate("/student");
+      navigate("/student", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {

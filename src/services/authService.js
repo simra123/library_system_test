@@ -1,43 +1,43 @@
-import studentsData from "@/data/students.json";
+import api from "@/services/api";
 
-const ADMIN = {
-  id: "A001",
-  name: "Admin User",
-  email: "admin@library.edu",
-  password: "admin123",
-};
-
-const STUDENT_PASSWORD = "student123";
-
-export const loginAdmin = async ({ email, password }) => {
-  const e = String(email || "").trim().toLowerCase();
-  if (e !== ADMIN.email || password !== ADMIN.password) {
-    throw new Error("Invalid admin credentials");
+const normalizeSession = (data, expectedRole) => {
+  if (!data?.token || !data?.user) {
+    throw new Error("The server returned an invalid login response");
   }
-  return {
-    token: "mock-admin-token",
-    user: { id: ADMIN.id, role: "admin", name: ADMIN.name, email: ADMIN.email },
-  };
-};
 
-export const loginStudent = async ({ email, password }) => {
-  const e = String(email || "").trim().toLowerCase();
-  const student = studentsData.find((s) => s.email.toLowerCase() === e);
-  if (!student || password !== STUDENT_PASSWORD) {
-    throw new Error("Invalid student credentials");
+  if (data.user.role !== expectedRole) {
+    throw new Error(`This account does not have the ${expectedRole} role`);
   }
+
   return {
-    token: "mock-student-token",
+    token: data.token,
     user: {
-      id: student.id,
-      role: "student",
-      name: student.name,
-      email: student.email,
-      department: student.department,
+      ...data.user,
+      id: String(data.user.id),
+      role: expectedRole,
     },
   };
 };
 
-export const forgotPassword = async ({ email }) => Promise.resolve({ ok: true, email });
+export const loginAdmin = async ({ email, password }) => {
+  const { data } = await api.post("/auth/admin/login", {
+    email: String(email).trim(),
+    password,
+  });
+
+  return normalizeSession(data, "admin");
+};
+
+export const loginStudent = async ({ email, password }) => {
+  const { data } = await api.post("/auth/student/login", {
+    email: String(email).trim(),
+    password,
+  });
+
+  return normalizeSession(data, "student");
+};
+
+export const forgotPassword = async ({ email }) =>
+  Promise.resolve({ ok: true, email });
 
 export const logout = async () => Promise.resolve({ ok: true });
