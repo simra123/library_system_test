@@ -39,6 +39,7 @@ type Actions = {
   updateCategory: (id: string, patch: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
   // students
+  setStudents: (students: Student[]) => void;
   addStudent: (s: Student) => void;
   updateStudent: (id: string, patch: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
@@ -96,6 +97,7 @@ export const useLibraryStore = create<State & Actions>((set, get) => ({
     if (cat) get().logActivity("Category Removed", `${cat.name} removed`);
   },
 
+  setStudents: (students) => set({ students }),
   addStudent: (s) => {
     set((st) => ({ students: [s, ...st.students] }));
     get().logActivity("New Student", `${s.name} registered`);

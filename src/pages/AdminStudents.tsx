@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,20 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { EmptyState } from "@/components/EmptyState";
 import { Pagination } from "@/components/Pagination";
 import { useLibraryStore, type Student } from "@/store/libraryStore";
-import { createStudent } from "@/services/studentService";
+import {
+  createStudent,
+  deleteStudent,
+  getStudents,
+} from "@/services/studentService";
 
 const PAGE_SIZE = 8;
 
 export default function StudentsPage() {
   const items = useLibraryStore((s) => s.students);
+  const setStudents = useLibraryStore((s) => s.setStudents);
   const addStudent = useLibraryStore((s) => s.addStudent);
   const updateStudent = useLibraryStore((s) => s.updateStudent);
-  const deleteStudent = useLibraryStore((s) => s.deleteStudent);
+  const removeStudent = useLibraryStore((s) => s.deleteStudent);
 
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -41,6 +46,33 @@ export default function StudentsPage() {
   const [editing, setEditing] = useState<Student | null>(null);
   const [toDelete, setToDelete] = useState<Student | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadStudents = async () => {
+      try {
+        const students = await getStudents();
+        if (active) setStudents(students);
+      } catch (error) {
+        if (active) {
+          setStudents([]);
+          toast.error(
+            error instanceof Error ? error.message : "Could not load students",
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadStudents();
+
+    return () => {
+      active = false;
+    };
+  }, [setStudents]);
 
   const filtered = useMemo(
     () =>
@@ -157,7 +189,6 @@ export default function StudentsPage() {
                   <Input
                     type="password"
                     name="password"
-                    defaultValue={editing?.password}
                     required
                   />
                 </div>
@@ -180,7 +211,9 @@ export default function StudentsPage() {
         </Card>
 
         <Card className="p-0 overflow-hidden">
-          {pageItems.length === 0 ? (
+          {loading ? (
+            <EmptyState title="Loading students..." />
+          ) : pageItems.length === 0 ? (
             <EmptyState title="No students found" />
           ) : (
             <>
@@ -244,11 +277,22 @@ export default function StudentsPage() {
           onOpenChange={(o) => !o && setToDelete(null)}
           title="Remove student?"
           description={`${toDelete?.name} will be removed from the system.`}
-          onConfirm={() => {
+          onConfirm={async () => {
             if (!toDelete) return;
-            deleteStudent(toDelete.id);
-            toast.success("Student removed");
-            setToDelete(null);
+            const student = toDelete;
+
+            try {
+              await deleteStudent(student.id);
+              removeStudent(student.id);
+              toast.success("Student removed");
+              setToDelete(null);
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Could not remove student",
+              );
+            }
           }}
         />
       </div>
